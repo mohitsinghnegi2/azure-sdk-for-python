@@ -124,7 +124,6 @@ class Workspace(Resource):
         image_build_compute: Optional[str] = None,
         public_network_access: Optional[str] = None,
         network_acls: Optional[NetworkAcls] = None,
-        ip_allowlist: Optional[List[str]] = None,
         identity: Optional[IdentityConfiguration] = None,
         primary_user_assigned_identity: Optional[str] = None,
         managed_network: Optional[ManagedNetwork] = None,
@@ -182,7 +181,6 @@ class Workspace(Resource):
             self._kind = WorkspaceKind.PROJECT
         self.serverless_compute: Optional[ServerlessComputeSettings] = serverless_compute
         self.network_acls: Optional[NetworkAcls] = network_acls
-        self.ip_allowlist = ip_allowlist
 
     @property
     def discovery_url(self) -> Optional[str]:
@@ -325,6 +323,8 @@ class Workspace(Resource):
         cls, rest_obj: RestWorkspace, v2_service_context: Optional[object] = None
     ) -> Optional["Workspace"]:
 
+        print("Workspace._from_rest_object executed")
+        print("rest_obj: ", rest_obj)
         if not rest_obj:
             return None
         customer_managed_key = (
@@ -395,10 +395,9 @@ class Workspace(Resource):
         if hasattr(rest_obj, "network_acls"):
             if rest_obj.network_acls and isinstance(rest_obj.network_acls, RestNetworkAcls):
                 network_acls = NetworkAcls._from_rest_object(rest_obj.network_acls)  # pylint: disable=protected-access
-        ip_allowlist = None
-        if hasattr(rest_obj, "ip_allowlist"):
-            if rest_obj.ip_allowlist and isinstance(rest_obj.ip_allowlist, list):
-                ip_allowlist = rest_obj.ip_allowlist
+
+        if network_acls is None and rest_obj.ip_allowlist is not None:
+            network_acls = NetworkAcls.parse(rest_obj.ip_allowlist)
 
         return cls(
             name=rest_obj.name,
@@ -418,7 +417,6 @@ class Workspace(Resource):
             customer_managed_key=customer_managed_key,
             image_build_compute=rest_obj.image_build_compute,
             public_network_access=rest_obj.public_network_access,
-            ip_allowlist=ip_allowlist,
             network_acls=network_acls,
             mlflow_tracking_uri=mlflow_tracking_uri,
             identity=identity,
@@ -434,6 +432,7 @@ class Workspace(Resource):
         )
 
     def _to_rest_object(self) -> RestWorkspace:
+        # print("Workspace._to_rest_object executed")
         """Note: Unlike most entities, the create operation for workspaces does NOTE use this function,
         and instead relies on its own internal conversion process to produce a valid ARM template.
 
@@ -447,10 +446,6 @@ class Workspace(Resource):
         serverless_compute_settings = None
         if self.serverless_compute:
             serverless_compute_settings = self.serverless_compute._to_rest_object()  # pylint: disable=protected-access
-
-        network_acls = None
-        if self.network_acls:
-            network_acls = self.network_acls._to_rest_object()  # pylint: disable=protected-access
 
         return RestWorkspace(
             name=self.name,
@@ -470,8 +465,6 @@ class Workspace(Resource):
             hbi_workspace=self.hbi_workspace,
             image_build_compute=self.image_build_compute,
             public_network_access=self.public_network_access,
-            network_acls=network_acls,
-            ip_allowlist=self.ip_allowlist,
             primary_user_assigned_identity=self.primary_user_assigned_identity,
             managed_network=(
                 self.managed_network._to_rest_object()  # pylint: disable=protected-access
@@ -490,4 +483,5 @@ class Workspace(Resource):
     # If they don't want to redefine things like _to_dict.
     @classmethod
     def _get_schema_class(cls) -> Type[WorkspaceSchema]:
+        print("Workspace._get_schema_class executed")
         return WorkspaceSchema
