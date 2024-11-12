@@ -1,0 +1,102 @@
+from azure.identity import DefaultAzureCredential
+from azure.ai.ml import MLClient
+from azure.ai.ml.entities import Hub, NetworkAcls
+
+# Define the necessary variables for your workspace
+subscription_id = "663724c3-071d-409b-bf3b-356add9b6b70"
+resource_group = "mohitnegi-rg1"
+workspace_name = "mohitnegi-hub"
+
+# Initialize MLClient with DefaultAzureCredential
+credential = DefaultAzureCredential()
+
+ml_client = MLClient(
+    credential=credential,
+    subscription_id=subscription_id,
+    resource_group_name=resource_group,
+)
+
+workspace = ml_client.workspaces.get(workspace_name)
+
+# def print_ws(ws):
+#     print("Connected to Azure ML Workspace.")
+#     print("Workspace Name:", ws.name)
+#     print("Workspace Location:", ws.location)
+#     print("Workspace Subscription ID:", ws.id)
+#     print("Workspace Resource Group:", ws.resource_group)
+#     print("Public network access:", ws.public_network_access)
+#     print("Default action NetworkAcls:", ws.network_acls.default_action)
+#     print("IP Rules NetworkAcls:", [ip_rule.value for ip_rule in ws.network_acls.ip_rules])
+
+# print_ws(workspace)
+
+# def print_workspace_list():
+#     print("Printing workspace list:")
+#     for ws in ml_client.workspaces.list(scope = "SUBSCRIPTION"):
+#         print_ws(ws)
+        
+#         print()
+
+# print("workspace update examples")
+
+# print("After workspace update")
+
+
+# # update hub workspace
+
+try:
+
+    # 1. Disabled (working)
+    # workspace_hub.public_network_access = "Disabled"
+
+    # 2. Enabled from selected IP addresses (working)
+    # workspace.public_network_access = "Enabled"
+    # workspace.network_acls = NetworkAcls(
+    #     default_action="Deny",
+    #     ip_rules=[
+    #         NetworkAcls.IPRule(value="103.248.19.87/32"),
+    #         NetworkAcls.IPRule(value="103.248.19.86/32")
+    #     ]
+    # )
+
+    # 3. Enabled from all networks
+    workspace.public_network_access = "Enabled"
+    workspace.network_acls = NetworkAcls(
+            default_action="Allow",
+            ip_rules=[]
+        )
+
+    updated_workspace =  ml_client.workspaces.begin_update(workspace).result()
+    print("Workspace updated successfully!", updated_workspace)
+    print("networkAcls updated ",updated_workspace.network_acls)
+    pass
+
+except Exception as e:
+    print(f"Failed to update workspace: {e} ")
+
+# delete resource example
+# ws = ml_client.workspaces.begin_delete(name="mohitnegi_hub-ws3", delete_dependent_resources=True, permanently_delete=True).result() # returns NONE
+# print(ws)
+# print("Workspace deleted successfully!")
+
+# create workspace example below (working)
+
+# ws = Hub(
+#     name="mohitnegi_hub-ws3",
+#     kind="hub",
+#     default_resource_group=resource_group,
+#     description="a test workspace",
+#     tags={"purpose": "demo"},
+#     location="centraluseuap",
+#     resource_group="mohitnegi-rg2",
+#     public_network_access="Enabled",
+#     # network_acls = NetworkAcls(
+#     #         default_action="Allow",
+#     #         ip_rules=[
+#     #             NetworkAcls.IPRule(value="103.248.19.87/32"),
+#     #         ]
+#     #     )
+
+# )
+# ws = ml_client.workspaces.begin_create(workspace=ws).result()
+# print("new created workspace",ws)
