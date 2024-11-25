@@ -1,0 +1,82 @@
+from azure.identity import DefaultAzureCredential
+from azure.ai.ml import MLClient
+from azure.ai.ml.entities import Workspace, NetworkAcls
+
+# Define the necessary variables for your workspace
+subscription_id = "663724c3-071d-409b-bf3b-356add9b6b70"
+resource_group = "mohitnegi-rg1"
+workspace_name = "mohitnegi-ws1"
+
+# Initialize MLClient with DefaultAzureCredential
+credential = DefaultAzureCredential()
+ml_client = MLClient(
+    credential=credential,
+    subscription_id=subscription_id,
+    resource_group_name=resource_group,
+    workspace_name=workspace_name,
+)
+
+workspace = ml_client.workspaces.get(workspace_name)
+# print()
+
+# print("Connected to Azure ML Workspace.")
+# print("Workspace Name:", workspace.name)
+# print("Workspace Location:", workspace.location)
+# print("Workspace Subscription ID:", workspace.id)
+# print("Workspace Resource Group:", workspace.resource_group)
+# # print("Workspace SKU:", workspace.sku)
+# # print("Default Storage Account:", workspace.default_storage_account)
+# print("Public network access:", workspace.public_network_access)
+# print("IP allowlist:", workspace.ip_allowlist)
+# print("Default action NetworkAcls:", workspace.network_acls.default_action)
+# print("IP Rules NetworkAcls:", [ip_rule.value for ip_rule in workspace.network_acls.ip_rules])
+# # print("Default NetworkAcls:", workspace.network_acls.virtual_network_rules)
+
+def print_workspace_list():
+    print("Printing workspace list:")
+    for ws in ml_client.workspaces.list(scope = "SUBSCRIPTION"):
+        print(f"Workspace Name: {ws.name}")
+        # print(f"Workspace Location: {ws.location}")
+        # print(f"Workspace Subscription ID: {ws.id}")
+        # print(f"Workspace Resource Group: {ws.resource_group}")
+        # print(f"Public network access: {ws.public_network_access}")
+        # print(f"IP allowlist: {ws.ip_allowlist}")
+        # print(f"Default action NetworkAcls: {ws.network_acls.default_action}")
+        # print(f"IP Rules NetworkAcls: {[ip_rule.value for ip_rule in ws.network_acls.ip_rules]}")
+        print()
+
+print("After workspace update")
+
+# Update the workspace (e.g., change description and tags)
+try:
+
+    # 1. Disabled
+    # workspace.public_network_access = "Disabled"
+
+    # 2. Enabled from selected IP addresses
+    # workspace.public_network_access = "Enabled"
+    # workspace.network_acls = NetworkAcls(
+    #     default_action="Deny",
+    #     ip_rules=[
+    #         NetworkAcls.IPRule(value="103.248.19.87/32"),
+    #         NetworkAcls.IPRule(value="103.248.19.86/32")
+    #     ]
+    # )
+
+    # 3. Enabled from all networks
+    workspace.public_network_access = "Enabled"
+    workspace.network_acls = NetworkAcls(
+            default_action="Allow",
+            ip_rules=[]
+        )
+
+    # print_workspace_list()
+    updated_workspace =  ml_client.workspaces.begin_update(workspace).result()
+    print("Workspace updated successfully!", updated_workspace)
+    print("networkAcls updated ",updated_workspace.network_acls)
+except Exception as e:
+    print(f"Failed to update workspace: {e} ")
+
+
+
+# ml_client.workspaces.begin_delete(name="test-ws", delete_dependent_resources=True, permanently_delete=True).result() # returns NONE

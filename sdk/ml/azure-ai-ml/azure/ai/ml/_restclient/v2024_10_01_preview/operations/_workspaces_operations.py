@@ -1163,6 +1163,7 @@ class WorkspacesOperations(object):
         **kwargs  # type: Any
     ):
         # type: (...) -> LROPoller["_models.Workspace"]
+        print("*** called begin_create_or_update method ")
         """Creates or updates a workspace with the specified parameters.
 
         Creates or updates a workspace with the specified parameters.

@@ -11,6 +11,7 @@ from typing import IO, Any, AnyStr, Dict, List, Optional, Tuple, Type, Union
 from azure.ai.ml._restclient.v2024_10_01_preview.models import FeatureStoreSettings as RestFeatureStoreSettings
 from azure.ai.ml._restclient.v2024_10_01_preview.models import ManagedNetworkSettings as RestManagedNetwork
 from azure.ai.ml._restclient.v2024_10_01_preview.models import ManagedServiceIdentity as RestManagedServiceIdentity
+from azure.ai.ml._restclient.v2024_10_01_preview.models import NetworkAcls as RestNetworkAcls
 from azure.ai.ml._restclient.v2024_10_01_preview.models import (
     ServerlessComputeSettings as RestServerlessComputeSettings,
 )
@@ -32,6 +33,7 @@ from azure.ai.ml.exceptions import ErrorCategory, ErrorTarget, ValidationErrorTy
 
 from .customer_managed_key import CustomerManagedKey
 from .feature_store_settings import FeatureStoreSettings
+from .network_acls import NetworkAcls
 from .networking import ManagedNetwork
 
 
@@ -125,6 +127,7 @@ class Workspace(Resource):
         customer_managed_key: Optional[CustomerManagedKey] = None,
         image_build_compute: Optional[str] = None,
         public_network_access: Optional[str] = None,
+        network_acls: Optional[NetworkAcls] = None,
         identity: Optional[IdentityConfiguration] = None,
         primary_user_assigned_identity: Optional[str] = None,
         managed_network: Optional[ManagedNetwork] = None,
@@ -144,6 +147,7 @@ class Workspace(Resource):
         # to maintain backwards compatibility with internal systems that I suspect still use 'kind' somewhere.
         # 'type' takes precedence over 'kind' if they're both set, and this defaults to a normal workspace's type
         # if nothing is set.
+        # pylint: disable=too-many-locals
         self._kind = kwargs.pop("kind", None)
         if self._kind is None:
             self._kind = WorkspaceKind.DEFAULT
@@ -182,6 +186,7 @@ class Workspace(Resource):
         if hub_id:
             self._kind = WorkspaceKind.PROJECT
         self.serverless_compute: Optional[ServerlessComputeSettings] = serverless_compute
+        self.network_acls: Optional[NetworkAcls] = network_acls
 
     @property
     def discovery_url(self) -> Optional[str]:
@@ -324,6 +329,8 @@ class Workspace(Resource):
         cls, rest_obj: RestWorkspace, v2_service_context: Optional[object] = None
     ) -> Optional["Workspace"]:
 
+        print("Workspace._from_rest_object executed")
+        print("rest_obj: ", rest_obj)
         if not rest_obj:
             return None
         customer_managed_key = (
@@ -393,6 +400,13 @@ class Workspace(Resource):
                 serverless_compute = ServerlessComputeSettings._from_rest_object(  # pylint: disable=protected-access
                     rest_obj.serverless_compute_settings
                 )
+        network_acls = None
+        if hasattr(rest_obj, "network_acls"):
+            if rest_obj.network_acls and isinstance(rest_obj.network_acls, RestNetworkAcls):
+                network_acls = NetworkAcls._from_rest_object(rest_obj.network_acls)  # pylint: disable=protected-access
+
+        if network_acls is None and rest_obj.ip_allowlist is not None:
+            network_acls = NetworkAcls.parse(rest_obj.ip_allowlist)
 
         return cls(
             name=rest_obj.name,
@@ -412,6 +426,7 @@ class Workspace(Resource):
             customer_managed_key=customer_managed_key,
             image_build_compute=rest_obj.image_build_compute,
             public_network_access=rest_obj.public_network_access,
+            network_acls=network_acls,
             mlflow_tracking_uri=mlflow_tracking_uri,
             identity=identity,
             primary_user_assigned_identity=rest_obj.primary_user_assigned_identity,
@@ -427,6 +442,7 @@ class Workspace(Resource):
         )
 
     def _to_rest_object(self) -> RestWorkspace:
+        # print("Workspace._to_rest_object executed")
         """Note: Unlike most entities, the create operation for workspaces does NOTE use this function,
         and instead relies on its own internal conversion process to produce a valid ARM template.
 
@@ -440,6 +456,7 @@ class Workspace(Resource):
         serverless_compute_settings = None
         if self.serverless_compute:
             serverless_compute_settings = self.serverless_compute._to_rest_object()  # pylint: disable=protected-access
+
         return RestWorkspace(
             name=self.name,
             identity=(
@@ -477,4 +494,5 @@ class Workspace(Resource):
     # If they don't want to redefine things like _to_dict.
     @classmethod
     def _get_schema_class(cls) -> Type[WorkspaceSchema]:
+        print("Workspace._get_schema_class executed")
         return WorkspaceSchema

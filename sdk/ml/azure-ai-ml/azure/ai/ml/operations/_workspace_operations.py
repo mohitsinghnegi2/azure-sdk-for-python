@@ -121,6 +121,7 @@ class WorkspaceOperations(WorkspaceOperationsBase):
     @distributed_trace
     # pylint: disable=arguments-renamed
     def get(self, name: Optional[str] = None, **kwargs: Dict) -> Optional[Workspace]:
+        # print("workspace_operations._workspace_operations.get")
         """Get a Workspace by name.
 
         :param name: Name of the workspace.
@@ -303,6 +304,7 @@ class WorkspaceOperations(WorkspaceOperationsBase):
         update_dependent_resources: bool = False,
         **kwargs: Any,
     ) -> LROPoller[Workspace]:
+        # print("WorkspaceOperations::begin_update function has been called")
         """Updates a Azure Machine Learning Workspace.
 
         :param workspace: Workspace definition.
